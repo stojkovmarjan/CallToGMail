@@ -3,6 +3,7 @@ package com.stoykov.maryan.calltogmail;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 
 
 public class BootReceiver extends BroadcastReceiver {
@@ -20,10 +21,14 @@ public class BootReceiver extends BroadcastReceiver {
         //Toast.makeText(context,"Boot RECEIVED",Toast.LENGTH_SHORT).show();
         ctx=context;
         //TODO: Citaj sets pa ako treba i creds
-        boolean fexists =FileIO.FileExists("crds.cfg",context);
+       boolean fexists =false;
+        SharedPreferences sharedPreferences=context.getSharedPreferences(IncomingDetect.SHARED_PREFS,context.MODE_PRIVATE);
+        System.out.println("### ZXMARJAN BootRec onRECEIVE");
+        if (sharedPreferences.contains("3")&&sharedPreferences.contains("0")) fexists=true;
 
-        if (intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED)&&fexists) {
+        if (intent.getAction().equalsIgnoreCase(Intent.ACTION_BOOT_COMPLETED)&&fexists) {
             loadCreds();
+            System.out.println("ZXMARJAN 77777777777777777777 "+allCreds[7]);
             if (allCreds[7].equals("true")){//ako poslednoto vo crds fajlot e true start na servisot
                 /**
                  Vistinski nacin za intent, ako ne e taka na android 5.0 pagja app ********************
@@ -36,18 +41,12 @@ public class BootReceiver extends BroadcastReceiver {
     }
 //==================================================================
     void loadCreds(){
-        String crds=FileIO.ReadIN("crds.cfg",ctx);
-        allCreds=new String[7];
-        allCreds=crds.split(":");
+        System.out.println("### ZXMARJAN BootRec loadcred");
+        allCreds=new String[8];
 
-        IncomingDetect.SetCreds(allCreds[0],//deviceid
-                                allCreds[1],//email to send from
-                                allCreds[2],                            //pass for sendin email
-                                allCreds[3],  //email to send to
-                                allCreds[4],//phone to SMS
-                                allCreds[5],//sendmail checkbox val
-                                allCreds[6], //send sms check val
-                                allCreds[7]);// start at boot val
+        IncomingDetect.loadCreds(ctx);
+
+        allCreds=IncomingDetect.GetCreds();
 
     }
 //==================================================================

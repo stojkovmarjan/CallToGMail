@@ -70,7 +70,6 @@ public class Creds {
                 _checkSMS,
                 _checkStartAtBoot});
     }
-
 }
 
 

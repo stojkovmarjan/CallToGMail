@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.IBinder;
 import android.support.v4.app.TaskStackBuilder;
 import android.support.v7.app.NotificationCompat;
@@ -27,8 +28,10 @@ public class IncomingDetect extends Service {
 
     private BroadcastReceiver callReceiver=new IncommingCallReceiver();//za da registriram receiver
 
-    public IncomingDetect() {
+    protected static final String SHARED_PREFS="calltogmail_shared";//protected za da mozam bez getter da ja citam
 
+    public IncomingDetect() {
+        //System.out.println("### ZXMARJAN IncomingDetect EMTY CONSTR");
     }
 
     public static void SetCreds(String devID,String sendF,String pass,String sendT,String sendSMS,
@@ -41,9 +44,11 @@ public class IncomingDetect extends Service {
         sendEmailCheck=chkEmail;
         sendSMSCehck=chkSMS;
         startAtBootCheck=chkBoot;
+        //System.out.println("### ZXMARJAN IncomingDetect CONSTR 1");
     }
 
     public static void SetCreds(String [] creds){
+        //System.out.println("### ZXMARJAN IncomingDetect CONSTR 2");
         DeviceID=creds[0];
         SendFrom=creds[1];
         Password=creds[2];
@@ -54,8 +59,27 @@ public class IncomingDetect extends Service {
         startAtBootCheck=creds[7];
     }
 
+    public static void loadCreds(Context ctxt){
+        //System.out.println("### ZXMARJAN IncomingDetect LOAD CREDS");
+        try {
+            SharedPreferences sharedPreferences=ctxt.getSharedPreferences(SHARED_PREFS,ctxt.MODE_PRIVATE);
+
+                SetCreds(sharedPreferences.getString("0",""),
+                        sharedPreferences.getString("1",""),
+                        sharedPreferences.getString("2",""),
+                        sharedPreferences.getString("3",""),
+                        sharedPreferences.getString("4",""),
+                        sharedPreferences.getString("5",""),
+                        sharedPreferences.getString("6",""),
+                        sharedPreferences.getString("7",""));
+
+        } catch (Exception e){
+            System.out.println(e.toString());
+        }
+    }
     public static String[] GetCreds(){
-        String[] crds=new String[7];
+        //System.out.println("### ZXMARJAN IncomingDetect GET CREDS");
+        String[] crds=new String[8];
         crds[0]=DeviceID;
         crds[1]=SendFrom;
         crds[2]=Password;
@@ -68,15 +92,30 @@ public class IncomingDetect extends Service {
     }
 
     public static boolean SaveCreds(String [] crds, Context ctxt){
-        String allCreds;
-        allCreds=crds[0]+":"+crds[1]+":"+crds[2]+":"+crds[3]+":"+crds[4]+":"+crds[5]+":"+crds[6]+":"+crds[7];
+        //System.out.println("### ZXMARJAN IncomingDetect SAVE CREDS");
+        boolean success=true;
+        SetCreds(crds);
+        try {
+            SharedPreferences sharedPreferences=ctxt.getSharedPreferences(SHARED_PREFS,ctxt.MODE_PRIVATE);
+            SharedPreferences.Editor editor=sharedPreferences.edit();
+            for (int f=0;f<8;f++){
+                editor.putString(String.valueOf(f),crds[f]);
+                }
+                editor.commit();
+                editor.apply();
 
-        return FileIO.SaveIN("crds.cfg",allCreds, ctxt);
+            } catch (Exception e){
+                success=false;
+                System.out.println(e.toString());
+            }
+
+        return success;
     }
 
     @Override
     public IBinder onBind(Intent intent) {
         // TODO: Return the communication channel to the service.
+       // System.out.println("### ZXMARJAN IncomingDetect IBinder");
         return null;
         //throw new UnsupportedOperationException("Not yet implemented");
     }
@@ -84,7 +123,7 @@ public class IncomingDetect extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startID){
-
+        //System.out.println("### ZXMARJAN IncomingDetect ONSTARTCOMMAND");
         /** REGISTRACIJA NA BROADCAST RECEIVER ***********
          * tuka a ne u manifest, za da mozam da go pustam i gasam
          * od aplikacijata
@@ -93,9 +132,10 @@ public class IncomingDetect extends Service {
         filter.addAction("android.intent.action.PHONE_STATE");
         registerReceiver(callReceiver, filter); // go registriram - aktiviram
         /** ********************************************************* */
-        Toast.makeText(this,"Call to mail service started",Toast.LENGTH_SHORT).show();
-        detectingActive=true;
+        Toast.makeText(this,"Call to GMail service started",Toast.LENGTH_SHORT).show();
+        //detectingActive=true;
         ctx=this.getBaseContext();
+        detectingActive=true;
         notifyRunning();
         return START_STICKY;
     }
@@ -103,26 +143,38 @@ public class IncomingDetect extends Service {
     @Override
     public void onDestroy(){
         super.onDestroy();
+        //System.out.println("### ZXMARJAN IncomingDetect ONDESTROY");
+        Context ctxt=getBaseContext();
         unregisterReceiver(callReceiver);//unregister receiver, go gasam
+
+        //detectingActive=false;
+
+        //====================== StartAtBoot CHECKBOX FALSE =================
+       // SharedPreferences sharedPreferences=ctxt.getSharedPreferences(SHARED_PREFS,ctxt.MODE_PRIVATE);
+        //SharedPreferences.Editor editor=sharedPreferences.edit();
+            //editor.putString("7","false");
+        //editor.commit();
+        //editor.apply();
         detectingActive=false;
         cancelNotify();
         Toast.makeText(this,"Call to mail service is stopped",Toast.LENGTH_SHORT).show();
     }
 
-    public static boolean isDetectingActive()
-    {
+    public static boolean isDetectingActive() {
+        //System.out.println("### ZXMARJAN IncomingDetect isDetectingActive");
         return detectingActive;
     }
 
     public void notifyRunning(){
+        //System.out.println("### ZXMARJAN IncomingDetect NotifyRun");
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this);
-        mBuilder.setSmallIcon(R.mipmap.ic_launcher);
-        mBuilder.setContentTitle("Call to email");
-        mBuilder.setContentText("Missed call to email is running!");
+        mBuilder.setSmallIcon(R.mipmap.ic_launcher_round);
+        mBuilder.setContentTitle("Call to GMail");
+        mBuilder.setContentText("Missed call to GMail is running!");
 
-        Intent resultIntent = new Intent(this, MainActivity.class);
+        Intent resultIntent = new Intent(this, Main2Activity.class);
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
-        stackBuilder.addParentStack(MainActivity.class);
+        stackBuilder.addParentStack(Main2Activity.class);
 
 // Adds the Intent that starts the Activity to the top of the stack
         stackBuilder.addNextIntent(resultIntent);
@@ -136,6 +188,7 @@ public class IncomingDetect extends Service {
     }
 
     public void cancelNotify(){
+        //System.out.println("### ZXMARJAN IncomingDetect CANCEL NOTIFY");
         String ns = Context.NOTIFICATION_SERVICE;
         NotificationManager nMgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         nMgr.cancel(17122112);

@@ -91,7 +91,7 @@ public class Mail extends javax.mail.Authenticator {
 
 
         _user = creds[1]+"@gmail.com";
-        Log.w("**************** ",_user);
+       // Log.w("**************** ",_user);
         _pass = creds[2];
         //Log.w("*************** ",_pass);
         _from=creds[1]+"@gmail.com";
@@ -229,5 +229,4 @@ public class Mail extends javax.mail.Authenticator {
         this._subject=s;
     }
     // more of the getters and setters …..
-
 }
